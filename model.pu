@@ -1,0 +1,111 @@
+Диаграмма классов
+
+@startuml
+
+package site.kiselev.bugtracker {
+
+    class App
+    class BugTrackerBot
+    class Cache
+
+    BugTrackerBot *-- Cache
+    App -- BugTrackerBot
+
+    package task {
+        class Task {
+            +Integer id
+            +List<Task> subTasks
+            +String subj
+            +String description
+            +State state
+            +long reminder
+
+            -Consumer<Task> saver
+            -Task root
+        }
+
+        Task *-- Task
+    }
+
+    package usersession {
+        class UserSessionFactory {
+            UserSession getUserSession(Integer userID)
+        }
+
+        class UserSession {
+            Queue inputQueue
+            Queue outputQueue
+            Task root
+            void write(String msg)
+        }
+
+        Cache o-- UserSession
+        UserSession -- Task
+        UserSessionFactory -- UserSession : produces >
+    }
+
+    object outputQueue
+    UserSession *-- outputQueue
+
+    package telegram {
+        object telegramBot
+        object telegramSendThread
+        object telegramReceiveThread
+
+        telegramSendThread -- outputQueue
+        telegramBot ..> UserSessionFactory : getting UserSession by ID
+        telegramBot ..> UserSession : posting to inputQueue
+    }
+
+}
+@enduml
+
+
+Диаграммы событий
+
+1. Общая работа
+@startuml
+    actor User
+    participant Telegram
+    participant BugTrackerBot
+    participant UserSessionFactory
+    participant UserSession
+    participant outputQueue
+    participant telegramSendThread
+
+    User -> Telegram : Send command
+    Telegram -> BugTrackerBot : Notify with message
+    BugTrackerBot -> UserSessionFactory : Get UserSession by ID
+    UserSessionFactory -> BugTrackerBot : Returns UserSession
+    BugTrackerBot -> UserSession : Push message to inputQueue
+    note over UserSession : Process message
+    UserSession -> outputQueue : Push answer
+    telegramSendThread -> outputQueue : Get message
+    telegramSendThread -> Telegram : Send to User
+    Telegram -> User : Send answer
+
+@enduml
+
+2. Обработка событий в UserSession
+@startuml
+    participant inputQueue
+    participant userSessionThread
+    participant Task
+    database Datastore
+    participant outputQueue
+
+    [-> inputQueue : Command
+    userSessionThread -> inputQueue : Get new commands
+    userSessionThread -> Task : Get tasks
+    Task -> Datastore : Update data from datastore
+    userSessionThread -> Task : Update task
+    Task -> Datastore : Save task
+    userSessionThread -> outputQueue : Send answer
+    outputQueue ->] : Answer
+
+@enduml
+
+
+
+
+
