@@ -53,7 +53,7 @@ public class TelegramSendThread {
     }
 
     public Runnable getRunnable() {
-        assert runnable != null;
+        assert sendFunction != null;
         return runnable;
     }
 
