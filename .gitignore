@@ -12,3 +12,4 @@ gradle-app.setting
 /classes/
 
 src/main/java/site/kiselev/ApplicationConfig.java
+/testdata/

@@ -6,7 +6,8 @@ package site.kiselev;
 public class App {
 
     public static void main(String[] args) {
-        BugTrackerBot bugTrackerBot = new BugTrackerBot();
+        //Telegram telegram = new Telegram();
+        Console console = new Console();
     }
 
 }

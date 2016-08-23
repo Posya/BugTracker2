@@ -49,9 +49,11 @@ public class BugTrackerBot {
             logger.debug("attempt to shutdown sendExecutor");
             sendExecutor.shutdown();
             sendExecutor.awaitTermination(5, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
+        }
+        catch (InterruptedException e) {
             logger.error("tasks interrupted");
-        } finally {
+        }
+        finally {
             if (!sendExecutor.isTerminated()) {
                 logger.error("cancel non-finished tasks");
             }

@@ -37,12 +37,22 @@ public class UserSession {
         }
     };
 
+    UserSession(Datastore datastore, BlockingQueue<SendMessage> outputQueue, Integer userID) {
+        this.datastore = datastore;
+        this.outputQueue = outputQueue;
+        this.userID = userID;
+        inputQueue = new LinkedBlockingQueue<>();
+        executor = Executors.newSingleThreadExecutor();
+        executor.submit(runnable);
+    }
+
     /**
      * User session logic
      *
      * @throws InterruptedException on interrupt
      */
     private void process() throws InterruptedException {
+        logger.trace("loop started");
         String json = datastore.get(new String[]{Long.toString(userID), "tasks"});
         Task rootTask = Task.fromJSON(json);
         if (rootTask == null) rootTask = new Task(Task.ROOT_ID);
@@ -63,31 +73,27 @@ public class UserSession {
                     cmdUnknown(cmd);
             }
         }
+
+        logger.trace("loop stopped");
     }
 
     private void cmdUnknown(String cmd) throws InterruptedException {
+        logger.trace("Command: cmdUnknown: {}", cmd);
         write("Простите, не знаю что делать с командой " + cmd);
     }
 
     private void cmdNew() throws InterruptedException {
+        logger.trace("Command: cmdNew");
 
     }
 
     private void cmdList(Task task) throws InterruptedException {
+        logger.trace("Command: cmdList: {}", task);
         String out = String.format("Задача %d%n%s", task.getId(), task.getSubj());
         for (Task t : task.getSubTasks()) {
             out += String.format("  %s (%d)%n", t.getSubj(), t.getId());
         }
         writeWithKeyboard(out, new String[][]{{"корень"}, {"создать", "подробнее"}});
-    }
-
-    UserSession(Datastore datastore, BlockingQueue<SendMessage> outputQueue, Integer userID) {
-        this.datastore = datastore;
-        this.outputQueue = outputQueue;
-        this.userID = userID;
-        inputQueue = new LinkedBlockingQueue<>();
-        executor = Executors.newSingleThreadExecutor();
-        executor.submit(runnable);
     }
 
     public void putMessage(String text) throws InterruptedException {
@@ -112,7 +118,9 @@ public class UserSession {
     }
 
     private String read() throws InterruptedException {
-        return inputQueue.take();
+        String s = inputQueue.take();
+        logger.trace("  read() = {}", s);
+        return s;
     }
 
     private void write(String text) throws InterruptedException {
@@ -124,6 +132,7 @@ public class UserSession {
     }
 
     private void writeWithKeyboard(String text, Keyboard keyboard) throws InterruptedException {
+        logger.trace("  write() = {}", text);
         SendMessage sm = new SendMessage(userID, text);
         sm.parseMode(ParseMode.Markdown);
         sm.replyMarkup(keyboard);
